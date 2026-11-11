@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build (unsigned, iOS device)
+        run: |
+          xcodebuild build \
+            -project Limon.xcodeproj \
+            -scheme Limon \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Limon.app Payload/
+          zip -qr Limon.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Limon-unsigned-ipa
+          path: Limon.ipa
